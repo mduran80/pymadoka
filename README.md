@@ -96,6 +96,21 @@ Each feature has two methods (when available):
 
 Check the examples folder for more details.
 
+## Supporting new features
+
+This library has been implemented to cover the basics of the HVAC. The official Madoka app seems to offer different GUIs according to the features of the HVAC model being controlled and mine doesn't seem to be as complex as others are. However, in the case you are interested in supporting other features, you can contribute by reverse engineering the Bluetooth messages required to control those features. 
+
+There are several ways to do it but one of the easiest is to snoop on the Bluetooth interface and capture all the traffic:
+* [Android bluetooth debugging](https://source.android.com/devices/bluetooth/verifying_debugging). By the end of the chapter, it explains how to enable Bluetooth Snoop logs 
+* [iOS bluetooth debugging](https://www.bluetooth.com/blog/a-new-way-to-debug-iosbluetooth-applications/). 
+
+Also, it is important to check the `btmon` utility as it can help with the message debugging on Linux. 
+
+Search for sent/received messages
+```
+sudo btmon | grep -C 5 ACL
+```
+
 ## Troubleshooting
 
 * **My device is not listed when I scan for devices using `bluetoothctl`**
@@ -119,3 +134,7 @@ The execution of a single command takes some time as it has to follow several st
 3. Connect
 4. Issue command
 5. Wait for response
+
+## TODO
+
+1. Implement a BLE emulator or a Frida script to activate the app features not shown for the device
