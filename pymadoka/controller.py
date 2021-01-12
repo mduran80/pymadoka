@@ -12,7 +12,7 @@ from pymadoka.features.operationmode import OperationMode
 from pymadoka.features.power import PowerState
 from pymadoka.features.setpoint import SetPoint
 from pymadoka.features.temperatures import Temperatures
-from pymadoka.features.clean_filter import CleanFilterIndicator
+from pymadoka.features.clean_filter import CleanFilterIndicator,ResetCleanFilterTimer
 
 class Controller:
     """This class implements the device controller.
@@ -56,6 +56,7 @@ class Controller:
         self.set_point = SetPoint(self.connection)
         self.temperatures = Temperatures(self.connection)
         self.clean_filter_indicator = CleanFilterIndicator(self.connection)
+        self.reset_clean_filter_timer = ResetCleanFilterTimer(self.connection)
 
     async def start(self):
         """Start the connection to the device.

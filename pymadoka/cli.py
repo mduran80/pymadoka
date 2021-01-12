@@ -12,6 +12,7 @@ from pymadoka.features.fanspeed import FanSpeedEnum, FanSpeedStatus
 from pymadoka.features.setpoint import SetPointStatus
 from pymadoka.features.operationmode import OperationModeStatus, OperationModeEnum
 from pymadoka.features.power import PowerStateStatus
+from pymadoka.features.clean_filter import ResetCleanFilterTimerStatus
 
 
 def format_output(format,status):
@@ -175,6 +176,13 @@ async def set_set_point(obj,set_point):
 @coro
 async def get_clean_filter_indicator(obj):
     return await obj["madoka"].clean_filter_indicator.query()
+  
+@cli.command()
+@click.pass_obj
+@coro
+async def reset_clean_filter_timer(obj):
+    """Reset the Clean Filter indicator timer."""
+    return await obj["madoka"].reset_clean_filter_timer.update(ResetCleanFilterTimerStatus())
   
 @cli.command()
 @click.pass_obj
