@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+
 import click
 import time
 import json
@@ -13,7 +14,6 @@ from pymadoka.features.setpoint import SetPointStatus
 from pymadoka.features.operationmode import OperationModeStatus, OperationModeEnum
 from pymadoka.features.power import PowerStateStatus
 from pymadoka.features.clean_filter import ResetCleanFilterTimerStatus
-
 
 def format_output(format,status):
     print(json.dumps(vars(status),default=str))
@@ -109,12 +109,14 @@ def cli(ctx,verbose,adapter,log_output,debug,address,force_disconnect, device_di
 @click.argument('fan-speed',
               type=(click.Choice(['LOW', 'MID', 'HIGH', 'AUTO'], case_sensitive=True),click.Choice(['LOW', 'MID', 'HIGH', 'AUTO'], case_sensitive=True)))
 async def set_fan_speed(obj,fan_speed):
+   """Set cooling and heating fan speeds."""
    return await obj["madoka"].fan_speed.update(FanSpeedStatus(FanSpeedEnum(fan_speed[0]), FanSpeedEnum(fan_speed[1])))
   
 @cli.command()
 @click.pass_obj
 @coro
 async def get_fan_speed(obj):
+    """Get cooling and heating fan speeds."""
     return await obj["madoka"].fan_speed.query()
  
 
@@ -123,6 +125,7 @@ async def get_fan_speed(obj):
 @click.pass_obj
 @coro
 async def get_operation_mode(obj):
+    """Get the operation mode."""
     return await obj["madoka"].operation_mode.query()
   
 @cli.command()
@@ -131,6 +134,7 @@ async def get_operation_mode(obj):
 @click.argument('operation-mode',
               type=click.Choice(['FAN', 'DRY', 'AUTO', 'COOL','HEAT','VENTILATION'], case_sensitive=True))
 async def set_operation_mode(obj,operation_mode):
+    """Set the operation mode."""
     return await obj["madoka"].operation_mode.update(OperationModeStatus(OperationModeEnum(operation_mode)))
     
 
@@ -138,7 +142,8 @@ async def set_operation_mode(obj,operation_mode):
 @click.pass_obj
 @coro
 async def get_power_state(obj):
-   return await obj["madoka"].power_state.query()
+    """Check if the HVAC is turned on."""
+    return await obj["madoka"].power_state.query()
   
    
 @click.command()
@@ -147,6 +152,7 @@ async def get_power_state(obj):
 @click.argument('power-state',
               type=click.Choice(['ON','OFF'], case_sensitive=True))
 async def set_power_state(obj,power_state):
+    """Turn ON or OFF the HVAC."""
     return await obj["madoka"].set_point.update(PowerStateStatus(power_state == "ON"))
   
         
@@ -154,6 +160,7 @@ async def set_power_state(obj,power_state):
 @click.pass_obj
 @coro
 async def get_temperatures(obj):
+    """Get temperatures as read by the thermostat."""
     return await obj["madoka"].temperatures_point.query()
   
 
@@ -161,6 +168,7 @@ async def get_temperatures(obj):
 @click.pass_obj
 @coro
 async def get_set_point(obj):
+    """Get target temperatures in Celsius degrees."""
     return await obj["madoka"].set_point.query()
 
 @cli.command()
@@ -169,14 +177,16 @@ async def get_set_point(obj):
 @click.argument('set-point',
               type= (click.IntRange(0, 30, clamp=True),click.IntRange(0, 30, clamp=True)))
 async def set_set_point(obj,set_point):
+    """Set cooling/heating target temperatures in Celsius degrees."""
     return await obj["madoka"].set_point.update(SetPointStatus(set_point[0],set_point[1]))
     
 @cli.command()
 @click.pass_obj
 @coro
 async def get_clean_filter_indicator(obj):
+    """Get status of the Clean Filter indicator."""
     return await obj["madoka"].clean_filter_indicator.query()
-  
+   
 @cli.command()
 @click.pass_obj
 @coro
@@ -188,6 +198,7 @@ async def reset_clean_filter_timer(obj):
 @click.pass_obj
 @coro
 async def get_status(obj):
+    """Get status of all the thermostat features."""
     await obj["madoka"].update()
     return obj["madoka"].refresh_status()
     
@@ -195,7 +206,8 @@ async def get_status(obj):
 @cli.command()
 @click.pass_obj
 @coro
-async def get_status(obj):
+async def get_info(obj):
+    """Get info of the device."""
     return await obj["madoka"].read_info()
   
     
