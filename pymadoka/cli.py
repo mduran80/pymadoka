@@ -107,9 +107,9 @@ def cli(ctx,verbose,adapter,log_output,debug,address,force_disconnect, device_di
 @click.pass_obj
 @coro
 @click.argument('fan-speed',
-              type=click.Choice(['LOW', 'MID', 'HIGH', 'AUTO'], case_sensitive=True))
+              type=(click.Choice(['LOW', 'MID', 'HIGH', 'AUTO'], case_sensitive=True),click.Choice(['LOW', 'MID', 'HIGH', 'AUTO'], case_sensitive=True)))
 async def set_fan_speed(obj,fan_speed):
-   return await obj["madoka"].fan_speed.update(FanSpeedStatus(FanSpeedEnum(fan_speed), FanSpeedEnum(fan_speed)))
+   return await obj["madoka"].fan_speed.update(FanSpeedStatus(FanSpeedEnum(fan_speed[0]), FanSpeedEnum(fan_speed[1])))
   
 @cli.command()
 @click.pass_obj
