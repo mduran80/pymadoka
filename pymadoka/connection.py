@@ -42,11 +42,19 @@ class Connection(TransportDelegate):
 
     Attributes:
         client (BleakClient): Bluetooth device client
+        adapter (str): Bluetooth adapter
+        transport (`Transport`): Transport used for the protocol
+        address (str): MAC address of the device
+        current_future (Future): Future of the current command being processed
+        connected (bool): True if connected, False otherwise
+        force_disconnect (bool): Force a hard disconnect of the device. The device is usually disconnected to ensure a better communication (default True)
+        device_discovery_timeout(int): Timeout used for the device discovery (default 5s)
     """
 
     def __init__(
         self,
         address: str,
+        adapter: str,
         force_disconnect: bool = True,
         device_discovery_timeout: int = 5
     ):
@@ -54,10 +62,12 @@ class Connection(TransportDelegate):
 
         Args:
             address (str): MAC address of the device
-            force_disconnect (bool): Force a hard disconnect of the device. The device is usually disconnected to ensure a better communication (default True)
+            adapter (str): Bluetooth adapter
+            force_disconnect (bool): Force a hard disconnect of the device. The device is usually disconnected to ensure a better communication, in Linux at least (default True)
             device_discovery_timeout(int): Timeout used for the device discovery (default 5s)
         """
         self.address = address
+        self.adapter = adapter
         self.connected = False
         self.last_info = None
         self.transport = Transport(self)
@@ -145,10 +155,10 @@ class Connection(TransportDelegate):
         if self.force_disconnect:
             self.hard_disconnect()
 
-        devices = await discover(timeout = self.device_discovery_timeout)
+        devices = await discover(timeout = self.device_discovery_timeout, adapter = self.adapter)
         for d in devices:
             if d.address == self.address: 
-                self.client = BleakClient(d)
+                self.client = BleakClient(d, adapter = self.adapter)
                 break
        
     def notification_handler(self, sender: str, data: bytearray):

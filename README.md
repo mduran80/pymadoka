@@ -10,13 +10,17 @@ What does it provide?
 * CLI command to control the device
 
 
+## Installation
+```
+pip install pymadoka
+```
 ## Requirements
 
-The library has been developed and tested on Linux. 
+The library has been developed and tested on Linux Python 3.
 
 Once the thermostat has been paired and connected to a client, it is not available during a devices scan. Therefore, the library usually enforces a "disconnect" of the current client so it can be listed and become available for connection. I have not been able to find the way to do it using the [BLE library](https://github.com/hbldh/bleak) so it relays on `bluetoothctl` to do it.
 
-However, this `bluetoothctl` dependency results in a lack of compatibility with other operating systems, so only Linux is supported at the moment.
+However, this `bluetoothctl` dependency results in a lack of compatibility with other operating systems, so only Linux is supported at the moment. Nevertheless, the "force disconnect" might be only required on Linux and can be disabled when testing other operating systems.
 
 **No other client must be connected to the device (even using the same Bluetooth adapter).** 
 
@@ -38,18 +42,29 @@ As previously noted, the device has to be paired in order to work and it require
 
 ## Command line usage
 
-The package provides a stand-alone CLI application that can be used to control the device. It outputs all the results in a convenient JSON format and can be configured using the following switches:
+The package provides a stand-alone CLI application (pymadoka) that can be used to control the device. It outputs all the results in a convenient JSON format and can be configured using the following switches:
 
-```
-Usage: pymadoka [OPTIONS] COMMAND [ARGS]...
+```Usage: pymadoka [OPTIONS] COMMAND [ARGS]...
 
 Options:
-  -a, --address TEXT              [required]
+  -a, --address TEXT              Bluetooth MAC address of the thermostat
+                                  [required]
+
+  -d, --adapter TEXT              Name of the Bluetooth adapter to be used for
+                                  the connection  [default: hci0]
+
   --force-disconnect / --not-force-disconnect
-  -t, --device-discovery-timeout INTEGER RANGE
-  -o, --log-output PATH
-  --debug
-  -v, --verbose
+                                  Should disconnect the device to ensure it is
+                                  recognized (recommended)  [default: True]
+
+  -t, --device-discovery-timeout INTEGER
+                                  Timeout for Bluetooth device scan in seconds
+                                  [default: 5]
+
+  -o, --log-output PATH           Path to the log output file
+  --debug                         Enable debug logging
+  --verbose                       Enable versbose logging
+  --version                       Show the version and exit.
   --help                          Show this message and exit.
 
 Commands:
@@ -63,16 +78,8 @@ Commands:
   set-fan-speed
   set-operation-mode
   set-set-point
-  ```
-
-  * -a: BRC1H address.
-  * --force-disconnect/--no-force-disconnect: Control if the device has to be disconnected to force a rediscovery
-  * -t: Device discovery timeout or for how long the scan must be run
-  * -o: Redirect logging to file output
-  * --debug: Enable debug logging
-  * -v: Verbose logging. This must be enabled if file output and debug options are to be used
-
-  Output example:
+```
+Output example:
 
 ```
 {"cooling_fan_speed": "HIGH", "heating_fan_speed": "LOW"}

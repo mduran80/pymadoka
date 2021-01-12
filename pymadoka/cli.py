@@ -68,17 +68,19 @@ def coro(f):
     return wrapper
 @click.group(chain=False)
 @click.pass_context
-@click.option('-a', '--address', required=True, type=str)
-@click.option('--force-disconnect/--not-force-disconnect', default=True)
-@click.option('-t', '--device-discovery-timeout', type=click.IntRange(0, 60, clamp=True))
-@click.option('-o', '--log-output', required=False,type=click.Path())
-@click.option('--debug', is_flag=True)
-@click.option('-v','--verbose', is_flag=True)
+@click.option('-a', '--address', required=True, type=str, help="Bluetooth MAC address of the thermostat")
+@click.option('-d', '--adapter', required=False, type=str, default="hci0", show_default=True, help="Name of the Bluetooth adapter to be used for the connection")
+@click.option('--force-disconnect/--not-force-disconnect', default="True", show_default=True, help="Should disconnect the device to ensure it is recognized (recommended)")
+@click.option('-t', '--device-discovery-timeout', type=int, default=5, show_default=True, help = "Timeout for Bluetooth device scan in seconds")
+@click.option('-o', '--log-output', required=False,type=click.Path(), help="Path to the log output file")
+@click.option('--debug', is_flag=True, help="Enable debug logging")
+@click.option('--verbose', is_flag=True, help="Enable versbose logging")
+@click.version_option()
 
 
-def cli(ctx,verbose,log_output,debug,address,force_disconnect, device_discovery_timeout):
+def cli(ctx,verbose,adapter,log_output,debug,address,force_disconnect, device_discovery_timeout):
   
-    madoka = Controller(address, force_disconnect = force_disconnect, device_discovery_timeout = device_discovery_timeout)
+    madoka = Controller(address, adapter = adapter, force_disconnect = force_disconnect, device_discovery_timeout = device_discovery_timeout)
     
     ctx.obj = {}
     ctx.obj["madoka"] = madoka
@@ -191,6 +193,5 @@ async def get_status(obj):
     
 
 if __name__ == "__main__":  
-       
     asyncio.get_event_loop().run_until_complete(cli())
    

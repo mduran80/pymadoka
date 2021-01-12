@@ -29,11 +29,12 @@ class Controller:
         set_point (Feature): Feature used to control the fan speed
         clean_filter_indicator (Feature): Feature used to control the fan speed
     """
-    def __init__(self, address: str, force_disconnect = None, device_discovery_timeout = None):
+    def __init__(self, address: str, adapter: str, force_disconnect = None, device_discovery_timeout = None):
         """Inits the controller with the device address.
 
         Args:
             address (str): MAC address of the device
+            adapter (str): Bluetooth adapter
             force_disconnect (bool): Force a hard disconnect of the device. The device is usually disconnected to ensure a better communication (default True)
             device_discovery_timeout(int): Timeout used for the device discovery (default 5s)
         """
@@ -42,9 +43,12 @@ class Controller:
             force_disconnect = True
         if device_discovery_timeout is None:
             device_discovery_timeout = 5
-
+        
+        if adapter is None:
+            adapter = "hci0"
+        
         self.status = {}
-        self.connection = Connection(address, force_disconnect = force_disconnect, device_discovery_timeout = device_discovery_timeout)
+        self.connection = Connection(address,adapter = adapter, force_disconnect = force_disconnect, device_discovery_timeout = device_discovery_timeout)
         
         self.fan_speed = FanSpeed(self.connection)
         self.operation_mode = OperationMode(self.connection)
