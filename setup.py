@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='pymadoka',
-    version='0.1',
+    version='0.1.1',
     py_modules=['pymadoka'],
     author = "Manuel Durán",
     author_email = "manuelduran@gmail.com",
