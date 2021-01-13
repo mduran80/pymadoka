@@ -3,7 +3,7 @@
 import asyncio
 from asyncio.futures import Future
 import logging                                    
-
+ 
 import subprocess
 import sys
 from enum import Enum
@@ -202,7 +202,7 @@ class Connection(TransportDelegate):
         for chunknum,chunk in enumerate(chunks):
             for i in range(0,SEND_MAX_TRIES):
                 try:
-                    if not self.connected:
+                    if self.connection_status == ConnectionStatus.DISCONNECTED:
                         await self.connect()
                     await self.client.write_gatt_char(WRITE_CHAR_UUID,chunk)
                     logger.debug(F"CMD {cmd_id}. Chunk #{chunknum+1}/{len(chunks)} sent with size {len(chunk)} bytes")
@@ -290,7 +290,7 @@ if __name__ == "__main__":
 
     async def main(connection:Connection):
         delay = 30
-        while not connection.connected:
+        while not connection.connection_status == ConnectionStatus.CONNECTED:
             logger.info(F"Device not ready. Waiting {delay}s...")
             await asyncio.sleep(delay)
         await connection.client.write_gatt_char(WRITE_CHAR_UUID,[0x00,0x06,0x00,0x20,0x00,0x00])

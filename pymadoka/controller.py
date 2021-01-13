@@ -6,7 +6,7 @@ import logging
 from typing import Union, Dict
 from enum import Enum
 from pymadoka.feature import Feature
-from pymadoka.connection import Connection
+from pymadoka.connection import Connection, ConnectionStatus
 from pymadoka.features.fanspeed import FanSpeed
 from pymadoka.features.operationmode import OperationMode
 from pymadoka.features.power import PowerState
@@ -65,7 +65,7 @@ class Controller:
         """Start the connection to the device.
         """        
         await self.connection.start()
-        while not self.connection.connected: 
+        while not self.connection.connection_status == ConnectionStatus.CONNECTED: 
             logger.info("Awaiting connection (5s)...")
             await asyncio.sleep(5)
     
