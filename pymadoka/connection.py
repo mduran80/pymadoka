@@ -5,14 +5,14 @@ from asyncio.futures import Future
 import logging                                    
 
 import subprocess
-from os import popen
 import sys
+from enum import Enum
 
 from bleak import BleakClient,discover
-from typing import Callable, Any, Dict
+from typing import Dict
 
 from pymadoka.transport import Transport, TransportDelegate
-from pymadoka.consts import SERVICE_UUID, NOTIFY_CHAR_UUID, WRITE_CHAR_UUID, SEND_MAX_TRIES
+from pymadoka.consts import NOTIFY_CHAR_UUID, WRITE_CHAR_UUID, SEND_MAX_TRIES
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,11 @@ class ConnectionException(Exception):
      """
     pass
 
+
+class ConnectionStatus(Enum):
+    DISCONNECTED = 0
+    CONNECTING = 1
+    CONNECTED = 2
 
 class Connection(TransportDelegate):
     
@@ -47,7 +52,7 @@ class Connection(TransportDelegate):
         transport (`Transport`): Transport used for the protocol
         address (str): MAC address of the device
         current_future (Future): Future of the current command being processed
-        connected (bool): True if connected, False otherwise
+        connected (ConnectionStatus): Status of the connection
         force_disconnect (bool): Force a hard disconnect of the device. The device is usually disconnected to ensure a better communication (default True)
         device_discovery_timeout(int): Timeout used for the device discovery (default 5s)
     """
@@ -69,7 +74,7 @@ class Connection(TransportDelegate):
         """
         self.address = address
         self.adapter = adapter
-        self.connected = False
+        self.connection_status = ConnectionStatus.DISCONNECTED
         self.last_info = None
         self.transport = Transport(self)
         self.current_future = None
@@ -77,7 +82,7 @@ class Connection(TransportDelegate):
         self.device_discovery_timeout = device_discovery_timeout
 
     def on_disconnect(self, client: BleakClient):
-        self.connected = False
+        self.connection_status = ConnectionStatus.DISCONNECTED
         # Put code here to handle what happens on disconnet.
         logger.info(f"Disconnected {self.address}!")
 
@@ -85,6 +90,7 @@ class Connection(TransportDelegate):
         if self.client:
             await self.client.stop_notify(NOTIFY_CHAR_UUID)
             await self.client.disconnect()
+        self.connection_status = ConnectionStatus.DISCONNECTED
 
     async def start(self):
         """Starts the connection.
@@ -100,7 +106,8 @@ class Connection(TransportDelegate):
             device_discovery_timeout(int): Timeout used for the device discovery (default 5s)
         """
         logger.info(F"Starting connection manager on {self.address}")
-        while not self.connected:
+        self.connection_status = ConnectionStatus.CONNECTING
+        while not self.connection_status == ConnectionStatus.CONNECTED:
             if self.client:
                 await self.connect()
             else:
@@ -127,15 +134,15 @@ class Connection(TransportDelegate):
             - On the client disconnect event
 
         """
-        if self.connected:
+        if self.connection_status == ConnectionStatus.CONNECTED:
             return
         try:
             await self.client.connect()
-            self.connected = await self.client.is_connected()
-            if self.connected:
+            connected = await self.client.is_connected()
+            if connected:
                 logger.info(F"Connected to {self.address}")
                 self.client.set_disconnected_callback(self.on_disconnect)
-
+                self.connection_status == ConnectionStatus.CONNECTED
                 await self.client.start_notify(
                     NOTIFY_CHAR_UUID, self.notification_handler,
                 )
@@ -183,7 +190,7 @@ class Connection(TransportDelegate):
             Future: Callers of this methods must await this Future to receive the result of the command execution
         """
 
-       # length, 0x00, cmdid, payload
+        # length, 0x00, cmdid, payload
         payload = bytearray([0x00,0x00]) + cmd_id.to_bytes(2,"big") + data
         payload[0] = len(payload)
 
