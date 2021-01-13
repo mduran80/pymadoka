@@ -12,6 +12,8 @@ Data transfer size
 """
 MAX_CHUNK_SIZE = 20
 
+logger = logging.getLogger(__name__)
+
 class TransportDelegate(ABC):
     """
     This interface defines the methods used by the Transport to notify the result of the rebuild process.
@@ -90,13 +92,13 @@ class Transport:
             chunk (bytearray): The chunk data to be processed
         """
         if len(chunk) < 2:
-            logging.info(F"Chunk received but discarded due to not enough data ({len(chunk)} bytes)")
+            logger.info(F"Chunk received but discarded due to not enough data ({len(chunk)} bytes)")
             return
         
         chunk_id = chunk[0]
         
         if self.last_id is not None and chunk_id <= self.last_id:
-            logging.debug("Chunks of a new message received while rebuilding another message. Discarding previous chunks...") 
+            logger.debug("Chunks of a new message received while rebuilding another message. Discarding previous chunks...") 
             self.chunks.clear()
             self.delegate.response_failed()
 
@@ -104,7 +106,7 @@ class Transport:
     
         self.chunks.append(chunk)
         if self.is_message_complete(): 
-            logging.debug("Message complete. Processing...")
+            logger.debug("Message complete. Processing...")
 
             out = bytearray()
             

@@ -20,7 +20,9 @@ def format_output(format,status):
 
 import threading
 import time
-#
+
+logger = logging.getLogger(__name__)
+
 class LoadingThread(threading.Thread):
     
     def __init__(self):
@@ -62,9 +64,9 @@ def coro(f):
         try:
             return asyncio.run(p(*args, **kwargs))
         except KeyboardInterrupt:
-            logging.info("User stopped program.")
+            logger.info("User stopped program.")
         finally:
-            logging.info("Disconnecting...")
+            logger.info("Disconnecting...")
    
     return wrapper
 @click.group(chain=False)
@@ -91,12 +93,12 @@ def cli(ctx,verbose,adapter,log_output,debug,address,force_disconnect, device_di
     loading = LoadingThread()
     logging_level = None
     if verbose:
-        logging_level = logging.DEBUG if debug else logging.INFO
+        logging_level = logger.DEBUG if debug else logger.INFO
     else:
         ctx.obj["loading"] = loading
         
     logging_filename = log_output
-    logging.basicConfig(level=logging_level,
+    logger.basicConfig(level=logging_level,
                         filename = logging_filename)
 
     

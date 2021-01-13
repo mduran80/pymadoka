@@ -14,6 +14,9 @@ from pymadoka.features.setpoint import SetPoint
 from pymadoka.features.temperatures import Temperatures
 from pymadoka.features.clean_filter import CleanFilterIndicator,ResetCleanFilterTimer
 
+logger = logging.getLogger(__name__)
+
+
 class Controller:
     """This class implements the device controller.
     It stores all the features supported by the device and provides methods to operate globally on all the features.
@@ -63,7 +66,7 @@ class Controller:
         """        
         await self.connection.start()
         while not self.connection.connected: 
-            logging.info("Awaiting connection (5s)...")
+            logger.info("Awaiting connection (5s)...")
             await asyncio.sleep(5)
     
     async def stop(self):
@@ -81,7 +84,7 @@ class Controller:
                 except NotImplemented as e:
                     pass
                 except Exception as e:
-                    logging.error(f"Failed to update {var.__class__.__name__}: {str(e)}")
+                    logger.error(f"Failed to update {var.__class__.__name__}: {str(e)}")
 
 
     
@@ -99,7 +102,7 @@ class Controller:
                 except NotImplemented as e:
                     pass
                 except Exception as e:
-                    logging.error(f"Failed to update {var.__class__.__name__}: {str(e)}")
+                    logger.error(f"Failed to update {var.__class__.__name__}: {str(e)}")
         return self.status
 
     

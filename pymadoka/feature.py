@@ -8,6 +8,8 @@ from typing import Dict
 
 from pymadoka.connection import Connection
 
+logger = logging.getLogger(__name__)
+
 class ParseException(Exception):
      pass
 
@@ -170,13 +172,13 @@ class Feature(ABC):
              response = await self.connection.send(self.query_cmd_id(), new_status.serialize())
              await response
              result = response.result()
-             logging.debug(f"{self.__class__.__name__} QUERY response received ({len(result)} bytes)")
+             logger.debug(f"{self.__class__.__name__} QUERY response received ({len(result)} bytes)")
              new_status.parse(result)
-             logging.info(f"{self.__class__.__name__} status updated, new value:\n{json.dumps(vars(new_status), default = str)}")
+             logger.info(f"{self.__class__.__name__} status updated, new value:\n{json.dumps(vars(new_status), default = str)}")
              self.status = new_status
              return self.status             
         except Exception as e:
-            logging.error(f"Could not send command: {str(e)}")
+            logger.error(f"Could not send command: {str(e)}")
             raise e
         
 
@@ -196,13 +198,13 @@ class Feature(ABC):
              response = await self.connection.send(self.update_cmd_id(), update_status.serialize())
              await response
              result = response.result()
-             logging.debug(f"{self.__class__.__name__} UPDATE response received ({len(result)} bytes)")
+             logger.debug(f"{self.__class__.__name__} UPDATE response received ({len(result)} bytes)")
              new_status = self.new_status()
              new_status.parse(result)
-             logging.info(f"{self.__class__.__name__} status updated, new value:\n{json.dumps(vars(new_status), default = str)}")
+             logger.info(f"{self.__class__.__name__} status updated, new value:\n{json.dumps(vars(new_status), default = str)}")
              self.status = new_status
              return self.status
         except Exception as e:
-             logging.error(f"Could not send command: {str(e)}")
+             logger.error(f"Could not send command: {str(e)}")
              raise e
        

@@ -14,6 +14,7 @@ from typing import Callable, Any, Dict
 from pymadoka.transport import Transport, TransportDelegate
 from pymadoka.consts import SERVICE_UUID, NOTIFY_CHAR_UUID, WRITE_CHAR_UUID, SEND_MAX_TRIES
 
+logger = logging.getLogger(__name__)
 
 class ConnectionException(Exception):
     """Exceptions are documented in the same way as classes.
@@ -78,7 +79,7 @@ class Connection(TransportDelegate):
     def on_disconnect(self, client: BleakClient):
         self.connected = False
         # Put code here to handle what happens on disconnet.
-        logging.info(f"Disconnected {self.address}!")
+        logger.info(f"Disconnected {self.address}!")
 
     async def cleanup(self):
         if self.client:
@@ -98,7 +99,7 @@ class Connection(TransportDelegate):
             force_disconnect (bool): Force a hard disconnect of the device. The device is usually disconnected to ensure a better communication (default True)
             device_discovery_timeout(int): Timeout used for the device discovery (default 5s)
         """
-        logging.info(F"Starting connection manager on {self.address}")
+        logger.info(F"Starting connection manager on {self.address}")
         while not self.connected:
             if self.client:
                 await self.connect()
@@ -112,11 +113,11 @@ class Connection(TransportDelegate):
         This method relays on the `bluetoothctl` tool to disconnect the device.
         """
 
-        logging.debug("Forcing disconnect...")
+        logger.debug("Forcing disconnect...")
         try:
             subprocess.run(["bluetoothctl","disconnect",self.address],check= True,capture_output=True)
         except subprocess.CalledProcessError as e:
-            logging.error(f"Could not disconnect device: {e.stdout}")
+            logger.error(f"Could not disconnect device: {e.stdout}")
 
     async def connect(self):
         """Connect to the device.
@@ -132,23 +133,23 @@ class Connection(TransportDelegate):
             await self.client.connect()
             self.connected = await self.client.is_connected()
             if self.connected:
-                logging.info(F"Connected to {self.address}")
+                logger.info(F"Connected to {self.address}")
                 self.client.set_disconnected_callback(self.on_disconnect)
 
                 await self.client.start_notify(
                     NOTIFY_CHAR_UUID, self.notification_handler,
                 )
             else:
-               logging.info(f"Failed to connect to {self.address.name}")
+               logger.info(f"Failed to connect to {self.address.name}")
         except Exception as e:
             if not "Software cause connection abort" in str(e):
-                logging.error(e)
-            logging.info("Reconnecting...")
+                logger.error(e)
+            logger.info("Reconnecting...")
 
     async def select_device(self):
         """Scan bluetooth devices searching for the thermostat address so it is registered in the DBUS and available to the client.
         """
-        logging.info("Bluetooh LE hardware warming up...")
+        logger.info("Bluetooh LE hardware warming up...")
         #await asyncio.sleep(2.0) # Wait for BLE to initialize.
         # Force disconnect to make it discoverable
 
@@ -186,7 +187,7 @@ class Connection(TransportDelegate):
         payload = bytearray([0x00,0x00]) + cmd_id.to_bytes(2,"big") + data
         payload[0] = len(payload)
 
-        logging.debug(f"Sending cmd payload: {payload}")
+        logger.debug(f"Sending cmd payload: {payload}")
        
         chunks = self.transport.split_in_chunks(payload)
         sent = 0
@@ -197,11 +198,11 @@ class Connection(TransportDelegate):
                     if not self.connected:
                         await self.connect()
                     await self.client.write_gatt_char(WRITE_CHAR_UUID,chunk)
-                    logging.debug(F"CMD {cmd_id}. Chunk #{chunknum+1}/{len(chunks)} sent with size {len(chunk)} bytes")
+                    logger.debug(F"CMD {cmd_id}. Chunk #{chunknum+1}/{len(chunks)} sent with size {len(chunk)} bytes")
                     sent += 1
                     break
                 except Exception as e:
-                    logging.warn(F"Send command failed. Retrying ({i}/{SEND_MAX_TRIES}) for chunk #{chunknum} : {str(e)}")
+                    logger.warn(F"Send command failed. Retrying ({i}/{SEND_MAX_TRIES}) for chunk #{chunknum} : {str(e)}")
                     await asyncio.sleep(1)    
 
         if sent != len(chunks):
@@ -244,7 +245,7 @@ class Connection(TransportDelegate):
             values = {}
 
             for service in self.client.services:
-                logging.debug("[Service] {0}: {1}".format(service.uuid, service.description))
+                logger.debug("[Service] {0}: {1}".format(service.uuid, service.description))
                 for char in service.characteristics:
                     if "read" in char.properties:
                         try:
@@ -259,7 +260,7 @@ class Connection(TransportDelegate):
                             except:
                                 value = str(raw)
                             values[char.description] = value
-                            logging.debug(
+                            logger.debug(
                                 "\t[Characteristic] {0}: (Handle: {1}) ({2}) | Name: {3}, Value: {4} ".format(
                                 char.uuid,
                                 char.handle,
@@ -269,13 +270,13 @@ class Connection(TransportDelegate):
                             )
                         )
                         except Exception as e:
-                            logging.error(e)
+                            logger.error(e)
 
 
             self.last_info = values
             return self.last_info
         except Exception as e:
-            logging.error(e)
+            logger.error(e)
             raise e
         
 if __name__ == "__main__":
@@ -283,11 +284,11 @@ if __name__ == "__main__":
     async def main(connection:Connection):
         delay = 30
         while not connection.connected:
-            logging.info(F"Device not ready. Waiting {delay}s...")
+            logger.info(F"Device not ready. Waiting {delay}s...")
             await asyncio.sleep(delay)
         await connection.client.write_gatt_char(WRITE_CHAR_UUID,[0x00,0x06,0x00,0x20,0x00,0x00])
 
-    logging.basicConfig(level=logging.NOTSET)
+    logger.basicConfig(level=logger.NOTSET)
     # Create the event loop.
     loop = asyncio.get_event_loop()
     address = sys.argv[1]
