@@ -27,7 +27,7 @@ class PowerStateStatus(FeatureStatus):
     
     def set_values(self, values:Dict[str,bytearray]):
         """See base class."""
-        self.turn_on = values[self.DATA_IDX] == 0x01
+        self.turn_on = values[self.DATA_IDX][0] == 0x01
         
     def get_values(self) -> Dict[str,bytearray]:
         """See base class."""
