@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from pymadoka.connection import discover_devices
+from pymadoka.connection import discover_devices, force_device_disconnect
 
 
 import click
@@ -53,12 +53,14 @@ def coro(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         async def p(*args,**kwargs):
-            await discover_devices(timeout = args[0]["timeout"], adapter = args[0]["adapter"])
-
+            
             loading = args[0]["loading"]
             if loading is not None:
                 loading.start()
-            madoka = args[0]["madoka"]
+
+            madoka:Controller = args[0]["madoka"]
+            await force_device_disconnect(madoka.connection.address)
+            await discover_devices(timeout = args[0]["timeout"], adapter = args[0]["adapter"])
             await madoka.start()
             status = await f(*args,**kwargs)
             if loading is not None:
@@ -91,7 +93,7 @@ def coro(f):
 
 def cli(ctx,verbose,adapter,log_output,debug,address,force_disconnect, device_discovery_timeout):
   
-    madoka = Controller(address,force_disconnect = force_disconnect)
+    madoka = Controller(address, adapter = adapter)
     
     ctx.obj = {}
     ctx.obj["madoka"] = madoka
