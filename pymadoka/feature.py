@@ -6,11 +6,16 @@ import logging
 import json
 from typing import Dict
 
-from pymadoka.connection import Connection
+from asyncio.exceptions import CancelledError
+
+from pymadoka.connection import Connection, ConnectionException, ConnectionStatus
 
 logger = logging.getLogger(__name__)
 
 class ParseException(Exception):
+     pass
+
+class NotImplementedException(Exception):
      pass
 
 class FeatureStatus(ABC):
@@ -102,7 +107,7 @@ class FeatureStatus(ABC):
         # Special case when no parameters are used
 
         if len(out) == 0:
-            out[0:2] = 0x00
+            out = bytearray([0x00,0x00])
 
         return out
             
@@ -165,20 +170,37 @@ class Feature(ABC):
         Returns:
             FeatureStatus: New status
         Raises:
-            Exception: Any exception raised is bubbled-up
+            ConnectionAbortedError: If the connection is not available
+            ConnectionException: If an error appeared during message delivery or reception
+            Exception: Any other exception raised is bubbled-up
         """
+
+        if self.connection.connection_status == ConnectionStatus.ABORTED:
+                raise ConnectionAbortedError(f"Could not send command: connection is not available")
+
+        
         try:
+            
+
              new_status = self.new_status()
              response = await self.connection.send(self.query_cmd_id(), new_status.serialize())
              await response
              result = response.result()
              logger.debug(f"{self.__class__.__name__} QUERY response received ({len(result)} bytes)")
              new_status.parse(result)
-             logger.info(f"{self.__class__.__name__} status updated, new value:\n{json.dumps(vars(new_status), default = str)}")
+             logger.debug(f"{self.__class__.__name__} status updated, new value:\n{json.dumps(vars(new_status), default = str)}")
              self.status = new_status
              return self.status             
+        except CancelledError as e:
+            if self.connection.connection_status == ConnectionStatus.ABORTED:
+                raise ConnectionAbortedError(f"Could not send command: connection is not available")
+            elif self.connection.connection_status == ConnectionStatus.CONNECTING:
+                pass
+            else:
+                raise ConnectionException(f"Could not send command: message could not be rebuilt")
+        except ConnectionAbortedError as e:
+            raise e
         except Exception as e:
-            logger.error(f"Could not send command: {str(e)}")
             raise e
         
 
@@ -187,24 +209,55 @@ class Feature(ABC):
 
         The method waits until the response is received, parses the result and updates the feature state accordingly.
 
+        We can assume that if the response was parsed correctly, the command went OK. The response data, algthough parseable, does not
+        reflect the actual status of the device. e.g:
+
+        Operation Mode Command Set DRY:
+        < ACL Data TX: Handle 73 flags 0x00 dlen 15             #1757 [hci0] 984.889214
+        ATT: Write Command (0x52) len 10
+        Handle: 0x0205
+          Data: 0007004030200101 <---- DRY
+
+        Operation Mode Command Set DRY - Response :
+        > ACL Data RX: Handle 73 flags 0x02 dlen 15             #1759 [hci0] 984.951395
+        ATT: Handle Value Notification (0x1b) len 10
+        Handle: 0x0202
+          Data: 0007004030200100 <---- FAN_ONLY
+
+        Please note the last byte as it 
+
         Args:
             update_status (FeatureStatus): New status to be set
         Returns:
             FeatureStatus: New status
         Raises:
-            Exception: Any exception raised is bubbled-up
+            ConnectionAbortedError: If the connection is not available
+            ConnectionException: If an error appeared during message delivery or reception
+            Exception: Any other exception raised is bubbled-up
         """
+
+        if self.connection.connection_status == ConnectionStatus.ABORTED:
+                raise ConnectionAbortedError(f"Could not send command: connection is not available")
+
         try:
              response = await self.connection.send(self.update_cmd_id(), update_status.serialize())
              await response
              result = response.result()
              logger.debug(f"{self.__class__.__name__} UPDATE response received ({len(result)} bytes)")
-             new_status = self.new_status()
-             new_status.parse(result)
-             logger.info(f"{self.__class__.__name__} status updated, new value:\n{json.dumps(vars(new_status), default = str)}")
-             self.status = new_status
+             response_status = self.new_status()
+             response_status.parse(result)
+             logger.debug(f"{self.__class__.__name__} status updated, new value:\n{json.dumps(vars(response_status), default = str)}")
+             self.status = update_status
              return self.status
+        except CancelledError as e:
+            if self.connection.connection_status == ConnectionStatus.ABORTED:
+                raise ConnectionAbortedError(f"Could not send command: connection is not available")
+            elif self.connection.connection_status == ConnectionStatus.CONNECTING:
+                pass
+            else:
+                raise ConnectionException(f"Could not send command: message could not be rebuilt")
+        except ConnectionAbortedError as e:
+            raise e
         except Exception as e:
-             logger.error(f"Could not send command: {str(e)}")
-             raise e
+            raise e
        

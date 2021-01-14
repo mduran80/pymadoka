@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from pymadoka.connection import discover_devices
 
 
 import click
@@ -52,6 +53,8 @@ def coro(f):
     @wraps(f)
     def wrapper(*args, **kwargs):
         async def p(*args,**kwargs):
+            await discover_devices(timeout = args[0]["timeout"], adapter = args[0]["adapter"])
+
             loading = args[0]["loading"]
             if loading is not None:
                 loading.start()
@@ -61,10 +64,15 @@ def coro(f):
             if loading is not None:
                 loading.join()
             format_output(args[0]["format"],status)
+            
         try:
-            return asyncio.run(p(*args, **kwargs))
+            return asyncio.run(p(*args, **kwargs)) 
         except KeyboardInterrupt:
             logger.info("User stopped program.")
+        except Exception as e:
+            logger.error(str(e))
+            if "loading" in args[0]:
+                args[0]["loading"].join()
         finally:
             logger.info("Disconnecting...")
    
@@ -83,12 +91,14 @@ def coro(f):
 
 def cli(ctx,verbose,adapter,log_output,debug,address,force_disconnect, device_discovery_timeout):
   
-    madoka = Controller(address, adapter = adapter, force_disconnect = force_disconnect, device_discovery_timeout = device_discovery_timeout)
+    madoka = Controller(address,force_disconnect = force_disconnect)
     
     ctx.obj = {}
     ctx.obj["madoka"] = madoka
     ctx.obj["loop"] = asyncio.get_event_loop()   
     ctx.obj["format"] = format
+    ctx.obj["timeout"] = device_discovery_timeout
+    ctx.obj["adapter"] = adapter
  
     loading = LoadingThread()
     logging_level = None
@@ -98,7 +108,7 @@ def cli(ctx,verbose,adapter,log_output,debug,address,force_disconnect, device_di
         ctx.obj["loading"] = loading
         
     logging_filename = log_output
-    logger.basicConfig(level=logging_level,
+    logging.basicConfig(level=logging_level,
                         filename = logging_filename)
 
     

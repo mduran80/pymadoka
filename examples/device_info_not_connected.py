@@ -8,11 +8,13 @@ from pymadoka.connection import discover_devices, force_device_disconnect
 
 logger = logging.getLogger(__name__)
 
+
 async def main(madoka):
     try:
         await force_device_disconnect(madoka.connection.address)
         await discover_devices()
-        await madoka.start()
+        # Commands sent when controller is not connected are resolved as empty
+        asyncio.create_task(madoka.start())
         device_info = await madoka.read_info()
         logger.info(f"Device info:\n {json.dumps(device_info, default = str)}")
     except Exception as e:

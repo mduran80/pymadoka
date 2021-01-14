@@ -99,26 +99,30 @@ class Transport:
         
         if self.last_id is not None and chunk_id <= self.last_id:
             logger.debug("Chunks of a new message received while rebuilding another message. Discarding previous chunks...") 
-            self.chunks.clear()
-            self.delegate.response_failed()
+            out = self.chunks_data()
+            self.delegate.response_failed(out)
+
 
         self.last_id = chunk[0]
-    
+        
         self.chunks.append(chunk)
+        
         if self.is_message_complete(): 
+
             logger.debug("Message complete. Processing...")
-
-            out = bytearray()
-            
-
-            for c in self.chunks:
-                out.extend(c[1:])
-
-            self.chunks.clear()
+            out = self.chunks_data()
             self.last_id = None
-
             self.delegate.response_rebuilt(out)
 
+
+    def chunks_data(self):
+        out = bytearray()
+        
+        for c in self.chunks:
+            out.extend(c[1:])
+        self.chunks.clear()
+
+        return out
 
     def split_in_chunks(self, data:bytearray) -> typing.List[bytearray]:
         """Split the data in MAX_CHUNK_SIZE bytes chunks. If more than one chunk is produced, numerate each chunk in the sequence.

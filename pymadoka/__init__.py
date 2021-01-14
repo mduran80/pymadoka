@@ -1,7 +1,7 @@
 from .controller import Controller
-from .connection import Connection
+from .connection import Connection, discover_devices, force_device_disconnect
 from .connection import ConnectionException
-from .feature import Feature, FeatureStatus
+from .feature import Feature, FeatureStatus, NotImplementedException
 from .features.clean_filter import CleanFilterIndicator, CleanFilterIndicatorStatus, ResetCleanFilterTimer, ResetCleanFilterTimerStatus
 from .features.fanspeed import FanSpeed, FanSpeedStatus, FanSpeedEnum
 from .features.operationmode import OperationMode, OperationModeStatus, OperationModeEnum
