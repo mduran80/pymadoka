@@ -2,7 +2,7 @@
 """
 
 from typing import Dict
-from pymadoka.feature import Feature, FeatureStatus
+from pymadoka.feature import Feature, FeatureStatus, NotImplementedException
 from pymadoka.connection import Connection
 
 class TemperaturesStatus(FeatureStatus):
@@ -64,9 +64,9 @@ class Temperatures(Feature):
         """See base class. This method has not been implemented.
 
         Raises:
-            NotImplemented: This feature cannot be updated
+            NotImplementedException: This feature cannot be updated
         """
-        raise NotImplemented("This feature cannot be updated")
+        raise NotImplementedException("This feature cannot be updated")
 
     def new_status(self) -> FeatureStatus:
         """See base class."""

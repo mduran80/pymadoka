@@ -2,7 +2,7 @@
 """
 
 from typing import Dict
-from pymadoka.feature import Feature, FeatureStatus
+from pymadoka.feature import Feature, FeatureStatus, NotImplementedException
 from pymadoka.connection import Connection
 
 class ResetCleanFilterTimerStatus(FeatureStatus):
@@ -41,9 +41,9 @@ class ResetCleanFilterTimer(Feature):
         """See base class.
         
         Raises:
-            NotImplemented: This feature cannot be queried
+            NotImplementedException: This feature cannot be queried
         """
-        raise NotImplemented("This feature cannot be queried")
+        raise NotImplementedException("This feature cannot be queried")
     
     def update_cmd_id(self)-> int:
         """See base class."""
@@ -51,7 +51,7 @@ class ResetCleanFilterTimer(Feature):
 
     def new_status(self) -> FeatureStatus:
         """See base class."""
-        return ResetCleanFilterTimerStatus(False)
+        return ResetCleanFilterTimerStatus()
 
 
 class CleanFilterIndicatorStatus(FeatureStatus):
@@ -78,7 +78,7 @@ class CleanFilterIndicatorStatus(FeatureStatus):
         
     def get_values(self) -> Dict[int,bytearray]:
         """See base class."""
-        pass
+        return {}
 
 class CleanFilterIndicator(Feature):
 
@@ -101,9 +101,9 @@ class CleanFilterIndicator(Feature):
         """See base class.
         
         Raises:
-            NotImplemented: This feature cannot be updated
+            NotImplementedException: This feature cannot be updated
         """
-        raise NotImplemented("This feature cannot be updated")
+        raise NotImplementedException("This feature cannot be updated")
 
     def new_status(self) -> FeatureStatus:
         """See base class."""
