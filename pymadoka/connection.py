@@ -1,6 +1,7 @@
 
 
 import asyncio
+from asyncio.exceptions import CancelledError
 from asyncio.futures import Future
 import logging                                    
  
@@ -110,7 +111,7 @@ class Connection(TransportDelegate):
         """
         self.adapter = adapter
         self.address = address
-        self.name = None
+        self.name = self.address
         self.connection_status = ConnectionStatus.DISCONNECTED
         self.last_info = None
         self.transport = Transport(self)
@@ -153,7 +154,8 @@ class Connection(TransportDelegate):
                 await asyncio.sleep(2.0)       
             except ConnectionAbortedError as e:
                  raise e  
-
+            except CancelledError as e:
+                 logger.error(str(e))  
     async def _connect(self):
         try:
             await self.client.connect()
@@ -232,7 +234,7 @@ class Connection(TransportDelegate):
        
         chunks = self.transport.split_in_chunks(payload)
         sent = 0
-
+        
         self.current_cmd_id = cmd_id
         for chunknum,chunk in enumerate(chunks):
             for i in range(0,SEND_MAX_TRIES):
@@ -245,6 +247,9 @@ class Connection(TransportDelegate):
                     logger.debug(F"CMD {cmd_id}. Chunk #{chunknum+1}/{len(chunks)} sent with size {len(chunk)} bytes")
                     sent += 1
                     break
+                except CancelledError as e:
+                    logger.debug(F"Send command failed. Retrying ({i}/{SEND_MAX_TRIES}) for chunk #{chunknum} : {str(e)}", exc_info = e)
+                    await asyncio.sleep(1)      
                 except Exception as e:
                     logger.debug(F"Send command failed. Retrying ({i}/{SEND_MAX_TRIES}) for chunk #{chunknum} : {str(e)}")
                     await asyncio.sleep(1)    
