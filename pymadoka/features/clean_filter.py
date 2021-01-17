@@ -78,7 +78,7 @@ class CleanFilterIndicatorStatus(FeatureStatus):
         
     def get_values(self) -> Dict[int,bytearray]:
         """See base class."""
-        return {}
+        return {self.CLEAN_FILTER_IDX:bytes([0x00])}
 
 class CleanFilterIndicator(Feature):
 
