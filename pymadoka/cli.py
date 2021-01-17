@@ -177,7 +177,7 @@ async def set_power_state(obj,power_state):
 @coro
 async def get_temperatures(obj):
     """Get temperatures as read by the thermostat."""
-    return await obj["madoka"].temperatures_point.query()
+    return await obj["madoka"].temperatures.query()
   
 
 @cli.command()
