@@ -1,4 +1,4 @@
-## PyMadoka
+# PyMadoka
 
 This library has been written to control the thermostat Daikin BRC1H family without the need to use the mobile Madoka apps.
 
