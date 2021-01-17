@@ -59,7 +59,8 @@ def coro(f):
                 loading.start()
 
             madoka:Controller = args[0]["madoka"]
-            await force_device_disconnect(madoka.connection.address)
+            if args[0]["force_disconnect"]:
+                await force_device_disconnect(madoka.connection.address)
             await discover_devices(timeout = args[0]["timeout"], adapter = args[0]["adapter"])
             await madoka.start()
             status = await f(*args,**kwargs)
@@ -101,11 +102,12 @@ def cli(ctx,verbose,adapter,log_output,debug,address,force_disconnect, device_di
     ctx.obj["format"] = format
     ctx.obj["timeout"] = device_discovery_timeout
     ctx.obj["adapter"] = adapter
+    ctx.obj["force_disconnect"] = force_disconnect
  
     loading = LoadingThread()
     logging_level = None
     if verbose:
-        logging_level = logger.DEBUG if debug else logger.INFO
+        logging_level = logging.DEBUG if debug else logging.INFO
     else:
         ctx.obj["loading"] = loading
         
