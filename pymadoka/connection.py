@@ -181,7 +181,7 @@ class Connection(TransportDelegate):
         logger.debug("Bluetooh LE hardware warming up...")
     
         for d in DISCOVERED_DEVICES_CACHE:
-            if d.address == self.address: 
+            if d.address.upper() == self.address.upper(): 
                 self.client = BleakClient(d, adapter = self.adapter)
                 self.name = d.name
                 break
