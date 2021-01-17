@@ -7,14 +7,15 @@ The code is based on the previous work by Benjamin Lafois (both [reverse enginee
 What does it provide?
 
 * A Python library that can be used to integrate it with home automation systems (HomeAssistant)
-* CLI command to control the device
+* CLI tool to control the device (pymadoka)
+* CLI tool to bridge the device with MQTT (pymadoka-mqtt)
 
 
-## Installation
+# Installation
 ```
 pip install pymadoka
 ```
-## Requirements
+# Requirements
 
 The library has been developed and tested on Linux Python 3.
 
@@ -27,7 +28,7 @@ However, this `bluetoothctl` dependency results in a lack of compatibility with 
 **This library has been designed to operate exclusively with the device and messages coming as a response of commands issued to the device from other clients may interfer with the behaviour.**
 
 
-## Pairing the device
+# Pairing the device
 
 As previously noted, the device has to be paired in order to work and it requires code confirmation on the screen. The best way to achieve it is to follow this steps:
 
@@ -40,11 +41,16 @@ As previously noted, the device has to be paired in order to work and it require
 * `pair <MAC_ADDRESS>`. You will be prompted to confirm the code. After typing yes, you will have to confirm on the BRC1H screen.
 
 
-## Command line usage
+# Command line usage
 
-The package provides a stand-alone CLI application (pymadoka) that can be used to control the device. It outputs all the results in a convenient JSON format and can be configured using the following switches:
+## pymadoka 
 
-```Usage: pymadoka [OPTIONS] COMMAND [ARGS]...
+The package provides a stand-alone CLI tool (pymadoka) that can be used to control the device. It outputs all the results in a convenient JSON format and can be configured using the following switches:
+
+```
+$ pymadoka
+
+Usage: pymadoka [OPTIONS] COMMAND [ARGS]...
 
 Options:
   -a, --address TEXT              Bluetooth MAC address of the thermostat
@@ -85,7 +91,61 @@ Output example:
 {"cooling_fan_speed": "HIGH", "heating_fan_speed": "LOW"}
 ```
 
-## Library usage
+## pymadoka-mqtt
+
+This tool is intended to be used as a daemon. It helps to integrate the library into home automation systems that support MQTT climate devices. It requires a configuration file to specify all the MQTT supported features:
+
+```yaml
+mqtt:
+    host: "localhost"
+    port: 1883
+    username: "myuser"
+    password: "mypassword"
+    ssl: False
+    root_topic: "/my_root_topic" # Default root topic is /madoka
+daemon:
+    update_interval: 15 # Query the device at this interval
+```
+
+This is an example of the data sent with each status message:
+
+```json
+
+$ mosquitto_sub -t "#"
+
+{"fan_speed": {"cooling_fan_speed": "LOW", "heating_fan_speed": "LOW"}, "operation_mode": {"operation_mode": "AUTO"}, "power_state": {"turn_on": false}, "set_point": {"cooling_set_point": 17, "heating_set_point": 17}, "temperatures": {"indoor": 20, "outdoor": null}, "clean_filter_indicator": {"clean_filter_indicator": false}}
+
+```
+Usage:
+
+```
+$ pymadoka-mqtt --help
+Usage: pymadoka-mqtt [OPTIONS]
+
+Options:
+  -a, --address TEXT              Bluetooth MAC address of the thermostat
+                                  [required]
+
+  -c, --config PATH               MQTT config file  [required]
+  -d, --adapter TEXT              Name of the Bluetooth adapter to be used for
+                                  the connection  [default: hci0]
+
+  --force-disconnect / --not-force-disconnect
+                                  Should disconnect the device to ensure it is
+                                  recognized (recommended)  [default: True]
+
+  -t, --device-discovery-timeout INTEGER
+                                  Timeout for Bluetooth device scan in seconds
+                                  [default: 5]
+
+  -o, --log-output PATH           Path to the log output file
+  --debug                         Enable debug logging
+  --verbose                       Enable versbose logging
+  --version                       Show the version and exit.
+  --help                          Show this message and exit.
+```
+
+# Library usage
 
 The main class is Controller. The Controller contains features that are used to control different aspects of the device such as: set point, fan speed, operation mode and others.
 
@@ -96,7 +156,7 @@ Each feature has two methods (when available):
 
 Check the examples folder for more details.
 
-## Supporting new features
+# Supporting new features
 
 This library has been implemented to cover the basics of the HVAC. The official Madoka app seems to offer different GUIs according to the features of the HVAC model being controlled and mine doesn't seem to be as complex as others are. However, in the case you are interested in supporting other features, you can contribute by reverse engineering the Bluetooth messages required to control those features. 
 
@@ -108,10 +168,10 @@ Also, it is important to check the `btmon` utility as it can help with the messa
 
 Search for sent/received messages
 ```
-sudo btmon | grep -C 5 ACL
+$ sudo btmon | grep -C 5 ACL
 ```
 
-## Troubleshooting
+# Troubleshooting
 
 * **My device is not listed when I scan for devices using `bluetoothctl`**
 
@@ -122,7 +182,7 @@ Check that the BR1CH is not connected to any other device. Go to BR1CH screen, t
 Check that your devices are correctly paired (`bluetoothctl paired-devices`). If your device is not listed and you are not able to pair after several tries, it may be due to a failure on DBUS-Bluez service. You can try to restart the service by issuing:
 
 ```
-sudo systemctl restart dbus-org.bluez.service
+$ sudo systemctl restart dbus-org.bluez.service
 ```
 
 * **It takes several seconds to execute each command**
@@ -135,6 +195,6 @@ The execution of a single command takes some time as it has to follow several st
 4. Issue command
 5. Wait for response
 
-## TODO
+# TODO
 
 1. Implement a BLE emulator or a Frida script to activate the app features not shown for the device

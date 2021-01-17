@@ -14,10 +14,12 @@ setup(
     install_requires=[
         'click',
         'bleak',
-        'pyyaml'
+        'pyyaml',
+        'asyncio-mqtt'
     ],
     entry_points='''
         [console_scripts]
         pymadoka=pymadoka.cli:cli
+        pymadoka-mqtt=pymadoka.mqtt:run
     ''',
 )
