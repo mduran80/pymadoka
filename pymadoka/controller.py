@@ -72,12 +72,15 @@ class Controller:
         for var in vars(self).values():
             if isinstance(var,Feature): 
                 try:
+                    # Small delay to avoid DBUS errors produced when calls are too quick
+                    await asyncio.sleep(0.3)
                     await var.query()
                 except NotImplementedException as e:
                     pass
                 except ConnectionAbortedError:
                     break
-                except ConnectionException:
+                except ConnectionException as e:
+                    logger.debug(f"Connection error: {str(e)}")
                     pass
                 except Exception as e:
                     logger.error(f"Failed to update {var.__class__.__name__}: {str(e)}")
@@ -90,10 +93,10 @@ class Controller:
         Returns:
             dict[str,Union[int,str,bool,dict,Enum]]: Dictionary with the status of each feature represented with basic types
         """
-        for var in vars(self).values():
-            if isinstance(var,Feature): 
-                if var.status is not None:
-                    self.status[var.__class__.__name__] = vars(var.status)
+        for k,v in vars(self).items():
+            if isinstance(v,Feature): 
+                if v.status is not None:
+                    self.status[k] = vars(v.status)
             
         return self.status
 
