@@ -413,6 +413,8 @@ async def run(ctx,verbose,adapter,log_output,debug,address,force_disconnect, dev
         mqtt_service.stop()
         await madoka.stop()
         logger.error(e)
+    except ConnectionRefusedError as e:
+        logger.error("Could not connect to MQTT broker")
     except Exception as e:
         logger.error(e)
 
