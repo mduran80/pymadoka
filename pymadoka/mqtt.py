@@ -9,7 +9,7 @@ import paho.mqtt.client as mqtt
 from paho.mqtt import MQTTException
 from typing import Any,Dict
 from functools import wraps
-from pymadoka.connection import Connection, ConnectionException, discover_devices, force_device_disconnect
+from pymadoka.connection import Connection, ConnectionStatus, ConnectionException, discover_devices, force_device_disconnect
 from pymadoka.controller import Controller
 from pymadoka.features.fanspeed import FanSpeedEnum, FanSpeedStatus
 from pymadoka.features.setpoint import SetPointStatus
@@ -232,6 +232,7 @@ class MQTT:
          
             self.client.on_connect = self.on_connect
             self.client.on_message = self.on_message
+            self.client.on_disconnect = self.on_disconnect
             self.client.connect(self.mqtt_cfg["host"], port=self.mqtt_cfg["port"])
             self.connect_future = asyncio.get_event_loop().create_future()
             return self.connect_future
@@ -261,6 +262,26 @@ class MQTT:
         if self.connected: 
             logger.debug("Connected to MQTT broker")
             self.start()
+
+    def on_disconnect(self,client, userdata, rc):
+        """ Connection established callback. See paho-mqtt docs for more details. """
+        logger.debug(f"Disconnected from MQTT broker ({rc})")
+        asyncio.create_task(self.reconnect())
+
+    async def reconnect(self):
+        is_connected = self.client.is_connected        
+        while not is_connected:
+            try:
+                logger.debug("Reconnecting in 60s...")
+                await asyncio.sleep(60)
+                c = await self.connect()
+                await c
+                is_connected = c.result()
+               
+            except CancelledError:
+                pass
+        
+        self.available(self.controller.connection.connection_status == ConnectionStatus.CONNECTED)
 
     def get_device_topic(self):
         """ Get the customized device topic using the device name and the root topic. 
@@ -292,11 +313,13 @@ class MQTT:
         Send the status to the status topic (JSON payload)
         Args:
             status (str): New status
-        """       
-        device_topic = self.get_device_topic()
-        topic = "/".join([device_topic, "state","get"])
-        
-        self.client.publish(topic,status)
+        """           
+        if not self.client.is_connected:
+            logger.debug("MQTT broker is not available. Skipping message...")
+            device_topic = self.get_device_topic()
+            topic = "/".join([device_topic, "state","get"])
+            
+            self.client.publish(topic,status)
         
 
     def on_message(self,client, userdata, msg):
