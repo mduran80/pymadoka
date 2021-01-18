@@ -122,7 +122,8 @@ class Connection(TransportDelegate):
         self.connection_status = ConnectionStatus.DISCONNECTED
         # Put code here to handle what happens on disconnet.
         logger.info(f"Disconnected {self.address}!")
-
+        asyncio.create_task(self.start())
+        
     async def cleanup(self):
         if self.client:
             await self.client.stop_notify(NOTIFY_CHAR_UUID)
