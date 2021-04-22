@@ -172,7 +172,7 @@ class Connection(TransportDelegate):
             else:
                logger.info(f"Failed to connect to {self.address.name}")
         except Exception as e:
-            if not "Software cause connection abort" in str(e):
+            if not "Software caused connection abort" in str(e):
                 logger.error(e)
             logger.debug("Reconnecting...")
 
