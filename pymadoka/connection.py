@@ -231,7 +231,7 @@ class Connection(TransportDelegate):
 
         payload[0] = len(payload)
 
-        logger.debug(f"Sending cmd payload: {payload}")
+        logger.debug(f"Sending cmd payload: {bytes(payload).hex()}")
        
         chunks = self.transport.split_in_chunks(payload)
         sent = 0
