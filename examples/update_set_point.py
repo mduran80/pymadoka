@@ -16,7 +16,7 @@ async def main(madoka):
         await madoka.start()    
         set_point_status = await madoka.set_point.query()
         logger.info(f"Set Point status:\n{json.dumps(vars(set_point_status), default = str)}")
-        await madoka.set_point.update(SetPointStatus(27,27))
+        await madoka.set_point.update(SetPointStatus(20,27))
         set_point_status = await madoka.set_point.query()
         logger.info(f"Updated Set Point status:\n{json.dumps(vars(set_point_status), default=str)}")
     except Exception as e:
