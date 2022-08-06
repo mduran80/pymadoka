@@ -316,6 +316,7 @@ class MQTT:
         """           
         if not self.client.is_connected:
             logger.debug("MQTT broker is not available. Skipping message...")
+        else:
             device_topic = self.get_device_topic()
             topic = "/".join([device_topic, "state","get"])
             
