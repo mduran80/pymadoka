@@ -182,7 +182,7 @@ class MQTT:
   
     ROOT_TOPIC = "/madoka"
     OPERATION_MODE_TOPIC = "operation_mode"
-    POWER_STATE_TOPIC = "fan_speed"
+    POWER_STATE_TOPIC = "power_state"
     FAN_SPEED_TOPIC = "fan_speed"
     SET_POINT_TOPIC = "set_point"
     AVAILABLE_TOPIC = "available"
