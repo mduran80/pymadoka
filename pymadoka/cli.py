@@ -126,7 +126,7 @@ def cli(ctx,verbose,adapter,log_output,debug,address,force_disconnect, device_di
               type=(click.Choice(['LOW', 'MID', 'HIGH', 'AUTO'], case_sensitive=True),click.Choice(['LOW', 'MID', 'HIGH', 'AUTO'], case_sensitive=True)))
 async def set_fan_speed(obj,fan_speed):
    """Set cooling and heating fan speeds."""
-   return await obj["madoka"].fan_speed.update(FanSpeedStatus(FanSpeedEnum(fan_speed[0]), FanSpeedEnum(fan_speed[1])))
+   return await obj["madoka"].fan_speed.update(FanSpeedStatus(FanSpeedEnum[fan_speed[0]], FanSpeedEnum[fan_speed[1]]))
   
 @cli.command()
 @click.pass_obj
@@ -151,7 +151,7 @@ async def get_operation_mode(obj):
               type=click.Choice(['FAN', 'DRY', 'AUTO', 'COOL','HEAT','VENTILATION'], case_sensitive=True))
 async def set_operation_mode(obj,operation_mode):
     """Set the operation mode."""
-    return await obj["madoka"].operation_mode.update(OperationModeStatus(OperationModeEnum(operation_mode)))
+    return await obj["madoka"].operation_mode.update(OperationModeStatus(OperationModeEnum[operation_mode]))
     
 
 @cli.command()
