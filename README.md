@@ -195,6 +195,10 @@ The execution of a single command takes some time as it has to follow several st
 4. Issue command
 5. Wait for response
 
+* **Setting the device set-point does not respect cooling/heating paremeters**
+
+Apparently, some devices like mine don't support separate set-point values and only the last set-point value sent in a command is used. Therefore, if you use the CLI or the library, be aware that the thermostat may set both set-points to the heating set-point. I have tested this behaviour by removing the heating set-point in the command implementation and it works like a charm. However, if I send both cooling followed by heating values, only heating set-point is used. 
+
 # TODO
 
 1. Implement a BLE emulator or a Frida script to activate the app features not shown for the device
