@@ -17,7 +17,10 @@ from pymadoka.features.power import PowerStateStatus
 from pymadoka.features.clean_filter import ResetCleanFilterTimerStatus
 
 def format_output(format,status):
-    print(json.dumps(vars(status),default=str))
+    try:
+        print(json.dumps(vars(status),default=str))
+    except:
+        print(json.dumps(status,default=str))
 
 import threading
 import time
