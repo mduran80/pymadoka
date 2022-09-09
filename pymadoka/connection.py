@@ -53,7 +53,7 @@ async def discover_devices(timeout=5,adapter="hci0", force_disconnect = True):
     await scanner.start()
     await asyncio.sleep(timeout)
     await scanner.stop()
-    DISCOVERED_DEVICES_CACHE = await scanner.get_discovered_devices()
+    DISCOVERED_DEVICES_CACHE = scanner.discovered_devices
     return DISCOVERED_DEVICES_CACHE
 
 async def force_device_disconnect(address):
@@ -160,7 +160,7 @@ class Connection(TransportDelegate):
     async def _connect(self):
         try:
             await self.client.connect()
-            connected = await self.client.is_connected()
+            connected = self.client.is_connected
             if connected:
                 logger.info(F"Connected to {self.address}")
                 self.client.set_disconnected_callback(self.on_disconnect)

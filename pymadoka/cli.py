@@ -17,7 +17,10 @@ from pymadoka.features.power import PowerStateStatus
 from pymadoka.features.clean_filter import ResetCleanFilterTimerStatus
 
 def format_output(format,status):
-    print(json.dumps(vars(status),default=str))
+    try:
+        print(json.dumps(vars(status),default=str))
+    except:
+        print(json.dumps(status,default=str))
 
 import threading
 import time
@@ -26,7 +29,8 @@ logger = logging.getLogger(__name__)
 
 class LoadingThread(threading.Thread):
     
-    def __init__(self):
+    def __init__(self, clean):
+        self.clean = clean
         super().__init__()
         self.stopevent = threading.Event()
 
@@ -38,15 +42,16 @@ class LoadingThread(threading.Thread):
         super().join(*args, **kwargs)
 
     def run(self):
-        spaces = 0  
-        while not self.stopevent.is_set():
-            print("\b "*spaces+".", end="", flush=True) 
-            spaces = spaces+1                          
-            time.sleep(0.2)                            
-            if (spaces>5):                              
-                print("\b \b"*spaces, end="")           
-                spaces = 0  
-        print("\b"*(spaces+2), end="", flush=True) 
+        if not self.clean:
+            spaces = 0  
+            while not self.stopevent.is_set():
+                print("\b "*spaces+".", end="", flush=True) 
+                spaces = spaces+1                          
+                time.sleep(0.2)                            
+                if (spaces>5):                              
+                    print("\b \b"*spaces, end="")           
+                    spaces = 0  
+            print("\b"*(spaces+2), end="", flush=True) 
  
 
 def coro(f):
@@ -89,10 +94,11 @@ def coro(f):
 @click.option('-o', '--log-output', required=False,type=click.Path(), help="Path to the log output file")
 @click.option('--debug', is_flag=True, help="Enable debug logging")
 @click.option('--verbose', is_flag=True, help="Enable versbose logging")
+@click.option('--clean', is_flag=True, help="Enable clean output")
 @click.version_option()
 
 
-def cli(ctx,verbose,adapter,log_output,debug,address,force_disconnect, device_discovery_timeout):
+def cli(ctx,verbose,clean,adapter,log_output,debug,address,force_disconnect, device_discovery_timeout):
   
     madoka = Controller(address, adapter = adapter)
     
@@ -104,7 +110,7 @@ def cli(ctx,verbose,adapter,log_output,debug,address,force_disconnect, device_di
     ctx.obj["adapter"] = adapter
     ctx.obj["force_disconnect"] = force_disconnect
  
-    loading = LoadingThread()
+    loading = LoadingThread(clean)
     logging_level = None
     if verbose:
         logging_level = logging.DEBUG if debug else logging.INFO
