@@ -168,14 +168,14 @@ async def get_power_state(obj):
     return await obj["madoka"].power_state.query()
   
    
-@click.command()
+@cli.command()
 @click.pass_obj
 @coro
 @click.argument('power-state',
               type=click.Choice(['ON','OFF'], case_sensitive=True))
 async def set_power_state(obj,power_state):
     """Turn ON or OFF the HVAC."""
-    return await obj["madoka"].set_point.update(PowerStateStatus(power_state == "ON"))
+    return await obj["madoka"].power_state.update(PowerStateStatus(power_state == "ON"))
   
         
 @cli.command()
