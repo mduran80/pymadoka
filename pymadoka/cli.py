@@ -93,7 +93,7 @@ def coro(f):
 @click.option('-t', '--device-discovery-timeout', type=int, default=5, show_default=True, help = "Timeout for Bluetooth device scan in seconds")
 @click.option('-o', '--log-output', required=False,type=click.Path(), help="Path to the log output file")
 @click.option('--debug', is_flag=True, help="Enable debug logging")
-@click.option('--verbose', is_flag=True, help="Enable versbose logging")
+@click.option('--verbose', is_flag=True, help="Enable verbose logging")
 @click.option('--clean', is_flag=True, help="Enable clean output")
 @click.version_option()
 
@@ -168,14 +168,14 @@ async def get_power_state(obj):
     return await obj["madoka"].power_state.query()
   
    
-@click.command()
+@cli.command()
 @click.pass_obj
 @coro
 @click.argument('power-state',
               type=click.Choice(['ON','OFF'], case_sensitive=True))
 async def set_power_state(obj,power_state):
     """Turn ON or OFF the HVAC."""
-    return await obj["madoka"].set_point.update(PowerStateStatus(power_state == "ON"))
+    return await obj["madoka"].power_state.update(PowerStateStatus(power_state == "ON"))
   
         
 @cli.command()
