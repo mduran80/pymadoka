@@ -126,7 +126,7 @@ async def set_power_state(controller:Controller,payload:str):
         payload (str): The payload will be converted to the values accepted by the controller
     """
     try:
-        status = PowerStateStatus(payload=="on")
+        status = PowerStateStatus(payload.decode("utf-8").upper()=="ON")
         await controller.power_state.update(status)
     except CancelledError as e:
         logging.error(f"Could not update operation mode: {str(e)}")
@@ -145,7 +145,7 @@ async def set_set_point_state(controller:Controller,payload:str):
         payload (str): The payload will be converted to the values accepted by the controller
     """
     try:
-        value = int(payload)
+        value = int(payload.decode("utf-8"))
         new_cooling_set_point = controller.set_point.status.cooling_set_point
         new_heating_set_point = controller.set_point.status.heating_set_point
 
