@@ -357,7 +357,7 @@ class MQTT:
         while not is_connected:
             try:
                 logger.debug("Reconnecting in 60s...")
-                await asyncio.sleep(5) 
+                await asyncio.sleep(60) 
                 is_connected = await self.connect()
             except CancelledError:
                 pass
