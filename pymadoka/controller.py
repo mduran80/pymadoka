@@ -32,7 +32,7 @@ class Controller:
         set_point (Feature): Feature used to control the fan speed
         clean_filter_indicator (Feature): Feature used to control the fan speed
     """
-    def __init__(self, address: str, adapter: str = "hci0"):
+    def __init__(self, address: str, adapter: str = "hci0", reconnect: bool = True):
         """Inits the controller with the device address.
 
         Args:
@@ -40,13 +40,13 @@ class Controller:
             adapter (str): Bluetooth adapter for the connection
         """
 
-
+     
         if adapter is None:
             adapter = "hci0"
         
         self.status = {}
         self.info = {}
-        self.connection = Connection(address,adapter = adapter)
+        self.connection = Connection(address,adapter = adapter, reconnect=reconnect)
         
         self.fan_speed = FanSpeed(self.connection)
         self.operation_mode = OperationMode(self.connection)
@@ -71,6 +71,7 @@ class Controller:
     async def update(self):
         """Iterate over all the features and query their status.
         """ 
+        
         for var in vars(self).values():
             if isinstance(var,Feature): 
                 try:
@@ -78,16 +79,17 @@ class Controller:
                     await asyncio.sleep(0.3)
                     await var.query()
                 except NotImplementedException as e:
-                    pass
-                except ConnectionAbortedError:
-                    break
+                    if not isinstance(var, ResetCleanFilterTimer):
+                        raise e                 
+                except ConnectionAbortedError as e:
+                    logger.debug(f"Connection aborted: {str(e)}")
+                    raise e
                 except ConnectionException as e:
                     logger.debug(f"Connection error: {str(e)}")
-                    pass
+                    raise e
                 except Exception as e:
                     logger.error(f"Failed to update {var.__class__.__name__}: {str(e)}")
-
-
+        
     
     def refresh_status(self) -> Dict[str,Union[int,str,bool,dict,Enum]]:
         """Collect the status from all the features into a single status dictionary with basic types.

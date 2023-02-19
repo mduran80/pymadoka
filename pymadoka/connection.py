@@ -101,7 +101,8 @@ class Connection(TransportDelegate):
     def __init__(
         self,
         address: str,
-        adapter: str
+        adapter: str,
+        reconnect: bool = True
     ):
         """Inits the connection with the device address.
 
@@ -109,6 +110,7 @@ class Connection(TransportDelegate):
             address (str): MAC address of the device
             adapter(str): Bluetooth adapter for the client
         """
+        self.reconnect = reconnect
         self.adapter = adapter
         self.address = address
         self.name = self.address
@@ -154,9 +156,11 @@ class Connection(TransportDelegate):
                     await self._select_device()
                 await asyncio.sleep(2.0)       
             except ConnectionAbortedError as e:
-                 raise e  
+                self.connection_status = ConnectionStatus.ABORTED
             except CancelledError as e:
-                 logger.error(str(e))  
+                logger.error(str(e))  
+            except Exception as e:
+                self.connection_status = ConnectionStatus.ABORTED
     async def _connect(self):
         try:
             await self.client.connect()
@@ -174,6 +178,8 @@ class Connection(TransportDelegate):
         except Exception as e:
             if not "Software caused connection abort" in str(e):
                 logger.error(e)
+            if not self.reconnect:
+                raise e
             logger.debug("Reconnecting...")
 
     async def _select_device(self):

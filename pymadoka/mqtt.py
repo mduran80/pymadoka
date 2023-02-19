@@ -209,7 +209,7 @@ class MQTT:
         temperature_command_template: str = "{{ int(value) }}"
         temperature_state_template: str = "{{ value_json.set_point['heating_set_point'] if value_json.operation_mode['operation_mode']=='HEAT' else value_json.set_point['cooling_set_point']}}"
         mode_state_template: str =  "{% set values = {None:None,'off':'off','HEAT':'heat','COOL':'cool','FAN':'fan_only', 'AUTO':'auto', 'DRY':'dry'} %} {{values[value_json.operation_mode['operation_mode']] if value_json.power_state['turn_on'] else 'off' }}"
-        mode_command_template: str = "{% set values = { 'auto':'AUTO', 'heat':'HEAT', 'cool':'COOL', 'fan_only':'FAN','off':'AUTO'} %}{{ values[value] if value in values.keys() else 'AUTO' }}"
+        mode_command_template: str = "{% set values = { 'auto':'AUTO', 'heat':'HEAT', 'cool':'COOL', 'fan_only':'FAN','off':'AUTO','dry':'DRY'} %}{{ values[value] if value in values.keys() else 'AUTO' }}"
         fan_mode_state_template: str = "{% set values = { 'AUTO':'auto', 'LOW':'low', 'MEDIUM':'medium', 'HIGH':'high'} %} {{ values[value_json.fan_speed['heating_fan_speed']] if value_json.operation_mode['operation_mode']=='HEAT' else values[value_json.fan_speed['cooling_fan_speed']]}}"
         fan_mode_command_template: str = "{% set values = { 'auto':'AUTO', 'low':'LOW', 'medium':'MID', 'high':'HIGH'} %}{{ values[value] }}"
         current_temperature_template: str = "{{ value_json.temperatures['indoor'] }}"
@@ -332,7 +332,8 @@ class MQTT:
 
     def stop(self):
         """ Disconnect from the MQTT broker """
-        self.client.disconnect()
+        if self.client:
+            self.client.disconnect()
        
     
     def on_connect(self,client, userdata, flags, rc):
@@ -364,7 +365,13 @@ class MQTT:
             except Exception as e:
                 logger.error(f"Error in MQTT: {str(e)}")
                 
-        
+    def normalize(self, address: str):
+        normalized_name = address
+        normalized_name = normalized_name.replace(" ","_")
+        normalized_name = normalized_name.replace(":","_")
+        normalized_name = normalized_name.replace("/","_")    
+        return normalized_name
+    
     def get_device_topic(self):
         """ Get the customized device topic using the device name and the root topic. 
         Returns:
@@ -378,8 +385,8 @@ class MQTT:
             normalized_name = self.controller.connection.address
             normalized_name = normalized_name.replace(" ","_")
             normalized_name = normalized_name.replace(":","_")
-            normalized_name = normalized_name.replace("/","_")
-            return "/".join([root_topic,normalized_name]) 
+            normalized_name = normalized_name.replace("/","_")   
+            return "/".join([root_topic, normalized_name]) 
 
     def available(self, status:bool):
         """
@@ -415,13 +422,17 @@ class MQTT:
         if not self.client.is_connected:
             logger.debug("MQTT broker is not available. Skipping message...")
         else:
-            device_topic = self.get_device_topic()
-            topic = "/".join([device_topic, "config"])
-            discovery = MQTT.DiscoveryMessage(self.controller.connection.address,
-                                           self.mqtt_cfg.get("friendly_name","Madoka friendly name"), 
-                                           self.get_device_topic(),
-                                           self.controller.info)
-            self.client.publish(topic,json.dumps(vars(discovery),default=str))
+            if "discovery_topic" in self.mqtt_cfg:
+                discovery_topic: str = self.mqtt_cfg["discovery_topic"]
+                device_topic = self.get_device_topic()
+                if device_topic.startswith("/"):
+                    device_topic = device_topic[1:]
+                discovery_topic = discovery_topic.replace("<device_topic>", device_topic)
+                discovery = MQTT.DiscoveryMessage(self.controller.connection.address,
+                                            self.mqtt_cfg.get("friendly_name","Madoka friendly name"), 
+                                            self.get_device_topic(),
+                                            self.controller.info)
+                self.client.publish(discovery_topic,json.dumps(vars(discovery),default=str))
 
     def on_message(self,client, userdata, msg):
         """ Message received callback. See paho-mqtt docs for more details. """
@@ -457,21 +468,33 @@ async def periodic_update(interval:int,controller:Controller,mqtt_service:MQTT):
         controller (`Controller`): Device controller to be updated
         mqtt_service (`MQTT`): MQTT service to send updates with
     """
-    available = True
-    while available:
+    reconnect = False
+    while True:
         try:
-            mqtt_service.available(True)
-            await controller.update()
-            status = controller.refresh_status()
-            mqtt_service.update(json.dumps(status,default=str))
+            try:
+                if reconnect:
+                    await controller.start()
+                    reconnect = False
+                await controller.update()
+                mqtt_service.available(True)
+                status = controller.refresh_status()
+                mqtt_service.update(json.dumps(status,default=str))                
+            except CancelledError as e:
+                logger.error(f"Operation cancelled : {str(e)}")
+            except ConnectionAbortedError as e:
+                mqtt_service.available(False)
+                reconnect = True
+            except ConnectionException as e:
+                mqtt_service.available(False)
+                reconnect = True
+            except Exception as e:
+                logger.error(f"Exception caught : {str(e)}")
+        
             await asyncio.sleep(interval)
+        
         except CancelledError as e:
-                pass
-        except ConnectionAbortedError as e:
-             mqtt_service.available(False)
-             available = False
-        except Exception as e:
-            logger.error(f"Exception caught : {str(e)}")
+            logger.error(f"Wait cancelled : {str(e)}")
+        
 
 @click.command()
 @click.pass_context
@@ -487,8 +510,10 @@ async def periodic_update(interval:int,controller:Controller,mqtt_service:MQTT):
 @coro
 async def run(ctx,verbose,adapter,log_output,debug,address,force_disconnect, device_discovery_timeout, config):
     
-        
-    madoka = Controller(address, adapter = adapter)
+    # We disable automatic reconnect on the controller so we
+    # can handle it from here and send the available message
+    # to the MQTT broker
+    madoka = Controller(address, adapter = adapter, reconnect=False)
     
     ctx.obj = {}
     ctx.obj["madoka"] = madoka
@@ -518,11 +543,10 @@ async def run(ctx,verbose,adapter,log_output,debug,address,force_disconnect, dev
         
         await madoka.start() 
         await madoka.read_info()      
-        connect = mqtt_service.connect() 
+        connect = await mqtt_service.connect() 
         
-        await connect
-        if not connect.result():
-              return
+        if not connect:
+            return
         
         mqtt_service.discovery()
         mqtt_service.available(True)
