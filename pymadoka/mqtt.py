@@ -292,7 +292,7 @@ class MQTT:
         connection has been finished.
         """
 
-        id = "madoka_mqtt_" + self.controller.connection.name
+        id = "madoka_mqtt_" + self.controller.connection.address
 
         if "id" in self.mqtt_cfg:
             id = self.mqtt_cfg["id"]
@@ -351,17 +351,19 @@ class MQTT:
         asyncio.create_task(self.reconnect())
 
     async def reconnect(self):
-        is_connected = self.client.is_connected        
+        # We can't trust the client.is_connected() value here
+        # as it is not updated
+        is_connected = False        
         while not is_connected:
             try:
                 logger.debug("Reconnecting in 60s...")
-                await asyncio.sleep(60)
-                c = await self.connect()
-                await c
-                is_connected = c.result()
-               
+                await asyncio.sleep(5) 
+                is_connected = await self.connect()
             except CancelledError:
                 pass
+            except Exception as e:
+                logger.error(f"Error in MQTT: {str(e)}")
+                
         
     def get_device_topic(self):
         """ Get the customized device topic using the device name and the root topic. 
