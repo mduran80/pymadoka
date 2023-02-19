@@ -45,6 +45,7 @@ class Controller:
             adapter = "hci0"
         
         self.status = {}
+        self.info = {}
         self.connection = Connection(address,adapter = adapter)
         
         self.fan_speed = FanSpeed(self.connection)
@@ -54,6 +55,7 @@ class Controller:
         self.temperatures = Temperatures(self.connection)
         self.clean_filter_indicator = CleanFilterIndicator(self.connection)
         self.reset_clean_filter_timer = ResetCleanFilterTimer(self.connection)
+        
 
     async def start(self):
         """Start the connection to the device.
@@ -106,8 +108,8 @@ class Controller:
         Returns:
             Dict[str,str]: Dictionary with the device info
         """
-        
-        return await self.connection.read_info()
+        self.info = await self.connection.read_info()
+        return self.info
        
 
 

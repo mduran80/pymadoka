@@ -102,15 +102,20 @@ mqtt:
     username: "myuser"
     password: "mypassword"
     ssl: False
+    unique_id: "88:88:88:88:88:88" # This is only used to report to HomeAssistant
+    friendly_name: "MyMadoka" # This is only used to report to HomeAssistant
     root_topic: "/my_root_topic" # Default root topic is /madoka
+    root_topic_only: False # If False, don't append the device name to the root_topic
 daemon:
-    update_interval: 15 # Query the device at this interval
+    update_interval: 15 # Query the device at this interval (seconds)
 ```
 
 This is an example of the data sent with each status message:
 
 ```json
 
+$ docker run -it -p 1883:1883 -p 9001:9001 eclipse-mosquitto
+$ docker run -it -p 1883:1883 -p 9001:9001 eclipse-mosquitto
 $ mosquitto_sub -t "#"
 
 {"fan_speed": {"cooling_fan_speed": "LOW", "heating_fan_speed": "LOW"}, "operation_mode": {"operation_mode": "AUTO"}, "power_state": {"turn_on": false}, "set_point": {"cooling_set_point": 17, "heating_set_point": 17}, "temperatures": {"indoor": 20, "outdoor": null}, "clean_filter_indicator": {"clean_filter_indicator": false}}
