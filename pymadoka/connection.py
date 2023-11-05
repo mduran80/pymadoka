@@ -163,8 +163,11 @@ class Connection(TransportDelegate):
                 self.connection_status = ConnectionStatus.ABORTED
     async def _connect(self):
         try:
-            await self.client.connect()
             connected = self.client.is_connected
+            if not connected:
+                await self.client.connect()
+                connected = self.client.is_connected
+                
             if connected:
                 logger.info(F"Connected to {self.address}")
                 self.client.set_disconnected_callback(self.on_disconnect)
@@ -172,9 +175,9 @@ class Connection(TransportDelegate):
                 await self.client.start_notify(
                     NOTIFY_CHAR_UUID, self.notification_handler,
                 )
-        
             else:
-               logger.info(f"Failed to connect to {self.address.name}")
+                logger.info(f"Failed to connect to {self.address}")
+                
         except Exception as e:
             if not "Software caused connection abort" in str(e):
                 logger.error(e)
