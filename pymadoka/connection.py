@@ -170,7 +170,7 @@ class Connection(TransportDelegate):
                 
             if connected:
                 logger.info(F"Connected to {self.address}")
-                self.client.set_disconnected_callback(self.on_disconnect)
+                # self.client.set_disconnected_callback(self.on_disconnect)
                 self.connection_status = ConnectionStatus.CONNECTED
                 await self.client.start_notify(
                     NOTIFY_CHAR_UUID, self.notification_handler,
@@ -192,7 +192,7 @@ class Connection(TransportDelegate):
     
         for d in DISCOVERED_DEVICES_CACHE:
             if d.address.upper() == self.address.upper(): 
-                self.client = BleakClient(d, adapter = self.adapter)
+                self.client = BleakClient(d, adapter = self.adapter, disconnected_callback=self.on_disconnect)
                 self.name = d.name
                 break
         if self.client == None:
